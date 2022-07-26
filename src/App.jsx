@@ -12,7 +12,7 @@ const App = () => {
 
   const [message, setMessage] = useState('');
 
-  const contractAddress = '0x483365C8c0aCAE8aa139411e2b8bbFeCd18a71fD';
+  const contractAddress = '0x5f201A69D75DAb49352a265562859F0BeDd0CE98';
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
