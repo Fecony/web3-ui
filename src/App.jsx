@@ -8,8 +8,11 @@ const App = () => {
   const [currentAccount, setCurrentAccount] = useState('');
   const [totalWaveCount, setTotalWaveCount] = useState(0);
   const [totalUserWaveCount, setTotalUserWaveCount] = useState(0);
+  const [allWaves, setAllWaves] = useState([]);
 
-  const contractAddress = '0x5a04eD7D8B12b9554fEA620ddE7618401bbf529E';
+  const [message, setMessage] = useState('');
+
+  const contractAddress = '0xd23B4f84B81078Fca120036b67664aD25B39F078';
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
@@ -32,6 +35,7 @@ const App = () => {
 
         setCurrentAccount(account);
         getTotalWaveCount();
+        getAllWaves();
       } else {
         console.log('No authorized account found');
       }
@@ -74,7 +78,7 @@ const App = () => {
           signer
         );
 
-        const waveTxn = await wavePortalContract.wave();
+        const waveTxn = await wavePortalContract.wave(message);
         console.log('Mining...', waveTxn.hash);
 
         await waveTxn.wait();
@@ -105,6 +109,7 @@ const App = () => {
         let count = await wavePortalContract.getTotalWaves();
         console.log('Retrieved total wave count...', count.toNumber());
 
+        console.log(currentAccount);
         let userWaveCount = await wavePortalContract.getTotalWavesFor(
           currentAccount
         );
@@ -124,9 +129,40 @@ const App = () => {
     }
   };
 
+  const getAllWaves = async () => {
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const wavePortalContract = new ethers.Contract(
+          contractAddress,
+          contractABI,
+          signer
+        );
+
+        const waves = await wavePortalContract.getAllWaves();
+
+        const wavesCleaned = waves.map((wave) => ({
+          address: wave.waver,
+          timestamp: new Date(wave.timestamp * 1000),
+          message: wave.message,
+        }));
+
+        setAllWaves(wavesCleaned);
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     checkIfWalletIsConnected();
-  }, [currentAccount, contractAddress, contractABI]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className='mainContainer'>
@@ -151,7 +187,7 @@ const App = () => {
 
         <div className='wave-count'>
           <div className='wave-count-container'>
-            {currentAccount && totalUserWaveCount && totalWaveCount ? (
+            {currentAccount ? (
               <>
                 <div className='wave-count-header'>
                   <span role='img' aria-label='Waving hand sign emoji'>
@@ -194,6 +230,14 @@ const App = () => {
           </div>
         </div>
 
+        <input
+          className='waveInput'
+          type='text'
+          name='message'
+          placeholder='Type your message here!'
+          onChange={(e) => setMessage(e.target.value)}
+        />
+
         <button
           className='waveButton'
           disabled={!currentAccount}
@@ -210,6 +254,23 @@ const App = () => {
             Connect Wallet
           </button>
         )}
+
+        {allWaves.map((wave) => {
+          return (
+            <div
+              key={wave.timestamp}
+              style={{
+                backgroundColor: 'OldLace',
+                marginTop: '16px',
+                padding: '8px',
+              }}
+            >
+              <div>Address: {wave.address}</div>
+              <div>Time: {wave.timestamp.toString()}</div>
+              <div>Message: {wave.message}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
